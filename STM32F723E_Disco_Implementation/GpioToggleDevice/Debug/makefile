@@ -46,8 +46,8 @@ GpioToggleDevice.bin \
 all: GpioToggleDevice.elf secondary-outputs
 
 # Tool invocations
-GpioToggleDevice.elf: $(OBJS) $(USER_OBJS) /home/michael/git_repos/SeniorProject/GPIOToggleDevice/STM32F723E_Disco_Implementation/GpioToggleDevice/STM32F723IEKX_FLASH.ld
-	arm-none-eabi-gcc -o "GpioToggleDevice.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"/home/michael/git_repos/SeniorProject/GPIOToggleDevice/STM32F723E_Disco_Implementation/GpioToggleDevice/STM32F723IEKX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GpioToggleDevice.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+GpioToggleDevice.elf: $(OBJS) $(USER_OBJS) /home/michael/Desktop/Workspace/GpioToggleDevice/STM32F723IEKX_FLASH.ld
+	arm-none-eabi-gcc -o "GpioToggleDevice.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"/home/michael/Desktop/Workspace/GpioToggleDevice/STM32F723IEKX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GpioToggleDevice.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -11,15 +11,15 @@
 struct Fifo
 {
 	uint8_t* m_buffer;
-	uint8_t m_bufferLength;
-	uint8_t m_head;
-	uint8_t m_tail;
+	uint32_t m_bufferLength;
+	uint32_t m_head;
+	uint32_t m_tail;
 };
 
 void Fifo_init(
 		struct Fifo* this,
 		uint8_t* _buffer,
-		uint8_t _bufferLength);
+		uint32_t _bufferLength);
 
 void Fifo_push(
 		struct Fifo* this,

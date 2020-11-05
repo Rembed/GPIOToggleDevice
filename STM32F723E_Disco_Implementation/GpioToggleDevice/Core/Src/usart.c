@@ -65,7 +65,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     PC7     ------> USART6_RX
     PC6     ------> USART6_TX
     */
-    GPIO_InitStruct.Pin = VCP_RX_Pin|VCP_TX_Pin;
+    GPIO_InitStruct.Pin = GPIO_PIN_7|VCP_TX_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -96,7 +96,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     PC7     ------> USART6_RX
     PC6     ------> USART6_TX
     */
-    HAL_GPIO_DeInit(GPIOC, VCP_RX_Pin|VCP_TX_Pin);
+    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_7|VCP_TX_Pin);
 
     /* USART6 interrupt Deinit */
     HAL_NVIC_DisableIRQ(USART6_IRQn);

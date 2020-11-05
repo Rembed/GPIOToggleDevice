@@ -9,7 +9,7 @@
 void Fifo_init(
 		struct Fifo* this,
 		uint8_t* _buffer,
-		uint8_t _bufferLength)
+		uint32_t _bufferLength)
 {
 	this->m_buffer = _buffer;
 	this->m_bufferLength = _bufferLength;

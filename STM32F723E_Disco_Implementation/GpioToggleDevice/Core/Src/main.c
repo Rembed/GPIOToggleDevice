@@ -30,7 +30,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+#define COMMANDLENGTH 	((uint32_t) 100)
+#define COMMANDLENGTHX2 ((uint32_t) 400)
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -51,18 +52,71 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+void ExecuteTimedSequence();
+void SetPersistentState();
+void Release();
+void EndSends();
+void SendResponse(uint8_t _command);
+void PinHigh(GPIO_TypeDef* _gpioPort, uint16_t _gpioPin);
+void PinLow(GPIO_TypeDef* _gpioPort, uint16_t _gpioPin);
+void PinReset(GPIO_TypeDef* _gpioPort, uint16_t _gpioPin);
+void SetPin(uint8_t state, GPIO_TypeDef* _gpioPort, uint16_t _gpioPin);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint8_t byte = 0;
-static uint8_t Command[250];
-static uint8_t FifoBuffer[32];
 
+uint8_t byte = 0;
+uint8_t command = 0;
+static uint8_t FifoBuffer[100];
 struct Fifo g_fifo;
 struct CommandParser g_commandParser;
+
+static uint8_t pin0StateBuffer[COMMANDLENGTH];
+static uint8_t pin1StateBuffer[COMMANDLENGTH];
+static uint8_t pin2StateBuffer[COMMANDLENGTH];
+static uint8_t pin3StateBuffer[COMMANDLENGTH];
+static uint8_t pin4StateBuffer[COMMANDLENGTH];
+static uint8_t pin5StateBuffer[COMMANDLENGTH];
+static uint8_t pin6StateBuffer[COMMANDLENGTH];
+static uint8_t pin7StateBuffer[COMMANDLENGTH];
+static uint8_t timeDelayBuffer[COMMANDLENGTHX2];
+
+struct Fifo g_pin0Fifo;
+struct Fifo g_pin1Fifo;
+struct Fifo g_pin2Fifo;
+struct Fifo g_pin3Fifo;
+struct Fifo g_pin4Fifo;
+struct Fifo g_pin5Fifo;
+struct Fifo g_pin6Fifo;
+struct Fifo g_pin7Fifo;
+struct Fifo timeDelayFifo;
+
+
+
+enum SyncBytes
+{
+	SyncByte1 = 0xA5,
+	SyncByte2 = 0xC3
+};
+
+enum Commands
+{
+	c_Connect				= 0xA1,
+	c_ExecuteTimedSequence 	= 0xB1,
+	c_SetPersistentState 	= 0xB2,
+	c_Release 				= 0xB3,
+	c_EndSends 				= 0xB4
+};
+
+enum FireType
+{
+	FLOAT 		= 0x0,
+	LOW 		= 0x1,
+	HIGH 		= 0x2,
+	NO_CHANGE 	= 0x3
+};
 
 /* USER CODE END 0 */
 
@@ -70,8 +124,6 @@ struct CommandParser g_commandParser;
   * @brief  The application entry point.
   * @retval int
   */
-
-
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -100,8 +152,19 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
-  Fifo_init(&g_fifo, FifoBuffer, 32);
-  CommandParser_init(&g_commandParser, &g_fifo, 0xA5, 0xC3);
+  Fifo_init(&g_fifo, FifoBuffer, 100);
+  CommandParser_init(&g_commandParser, &g_fifo, SyncByte1, SyncByte2);
+
+  Fifo_init(&g_pin0Fifo, pin0StateBuffer, COMMANDLENGTH);
+  Fifo_init(&g_pin1Fifo, pin1StateBuffer, COMMANDLENGTH);
+  Fifo_init(&g_pin2Fifo, pin2StateBuffer, COMMANDLENGTH);
+  Fifo_init(&g_pin3Fifo, pin3StateBuffer, COMMANDLENGTH);
+  Fifo_init(&g_pin4Fifo, pin4StateBuffer, COMMANDLENGTH);
+  Fifo_init(&g_pin5Fifo, pin5StateBuffer, COMMANDLENGTH);
+  Fifo_init(&g_pin6Fifo, pin6StateBuffer, COMMANDLENGTH);
+  Fifo_init(&g_pin7Fifo, pin7StateBuffer, COMMANDLENGTH);
+
+  Fifo_init(&timeDelayFifo, timeDelayBuffer, COMMANDLENGTHX2);
 
   HAL_UART_Receive_IT(&huart6, &byte, 1);
 
@@ -112,25 +175,33 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  HAL_Delay(10);
-	  if(CommandParser_getCommand(&g_commandParser) == 0xB2)
-	  {
-		  uint8_t i = 0;
-		  i++;
-	  }
 
     /* USER CODE BEGIN 3 */
+
+	  HAL_Delay(10);
+	  command = CommandParser_getCommand(&g_commandParser);
+
+	  switch(command)
+	  {
+	  case c_Connect:
+		  break;
+	  case c_ExecuteTimedSequence:
+		  ExecuteTimedSequence();
+		  break;
+	  case c_SetPersistentState:
+		  SetPersistentState();
+		  break;
+	  case c_Release:
+		  Release();
+		  break;
+	  case c_EndSends:
+		  EndSends();
+		  break;
+	  default:
+		  break;
+	  }
   }
   /* USER CODE END 3 */
-}
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	if(huart == &huart6)
-	{
-		Fifo_push(&g_fifo, byte);
-		HAL_UART_Receive_IT(&huart6, &byte, 1);
-	}
 }
 
 /**
@@ -191,6 +262,197 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart == &huart6)
+	{
+		Fifo_push(&g_fifo, byte);
+		HAL_UART_Receive_IT(&huart6, &byte, 1);
+	}
+}
+
+void ExecuteTimedSequence()
+{
+	uint8_t byte = 0;
+
+	Fifo_pop(&g_fifo);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&timeDelayFifo, byte);
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&timeDelayFifo, byte);
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&timeDelayFifo, byte);
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&timeDelayFifo, byte);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&g_pin0Fifo, byte);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&g_pin1Fifo, byte);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&g_pin2Fifo, byte);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&g_pin3Fifo, byte);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&g_pin4Fifo, byte);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&g_pin5Fifo, byte);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&g_pin6Fifo, byte);
+
+	byte = Fifo_pop(&g_fifo);
+	Fifo_push(&g_pin7Fifo, byte);
+
+	SendResponse(c_ExecuteTimedSequence);
+}
+
+void SetPersistentState()
+{
+	uint8_t state = 0x3;
+	state = Fifo_pop(&g_fifo);
+	SetPin(state, TOGGLE_PIN_0_GPIO_Port, TOGGLE_PIN_0_Pin);
+	state = Fifo_pop(&g_fifo);
+	SetPin(state, TOGGLE_PIN_1_GPIO_Port, TOGGLE_PIN_1_Pin);
+	state = Fifo_pop(&g_fifo);
+	SetPin(state, TOGGLE_PIN_2_GPIO_Port, TOGGLE_PIN_2_Pin);
+	state = Fifo_pop(&g_fifo);
+	SetPin(state, TOGGLE_PIN_3_GPIO_Port, TOGGLE_PIN_3_Pin);
+	state = Fifo_pop(&g_fifo);
+	SetPin(state, TOGGLE_PIN_4_GPIO_Port, TOGGLE_PIN_4_Pin);
+	state = Fifo_pop(&g_fifo);
+	SetPin(state, TOGGLE_PIN_5_GPIO_Port, TOGGLE_PIN_5_Pin);
+	state = Fifo_pop(&g_fifo);
+	SetPin(state, TOGGLE_PIN_6_GPIO_Port, TOGGLE_PIN_6_Pin);
+	state = Fifo_pop(&g_fifo);
+	SetPin(state, TOGGLE_PIN_7_GPIO_Port, TOGGLE_PIN_7_Pin);
+
+	SendResponse(c_SetPersistentState);
+}
+
+void Release()
+{
+	PinReset(TOGGLE_PIN_0_GPIO_Port, TOGGLE_PIN_0_Pin);
+	PinReset(TOGGLE_PIN_1_GPIO_Port, TOGGLE_PIN_1_Pin);
+	PinReset(TOGGLE_PIN_2_GPIO_Port, TOGGLE_PIN_2_Pin);
+	PinReset(TOGGLE_PIN_3_GPIO_Port, TOGGLE_PIN_3_Pin);
+	PinReset(TOGGLE_PIN_4_GPIO_Port, TOGGLE_PIN_4_Pin);
+	PinReset(TOGGLE_PIN_5_GPIO_Port, TOGGLE_PIN_5_Pin);
+	PinReset(TOGGLE_PIN_6_GPIO_Port, TOGGLE_PIN_6_Pin);
+	PinReset(TOGGLE_PIN_7_GPIO_Port, TOGGLE_PIN_7_Pin);
+
+	SendResponse(c_Release);
+}
+
+void EndSends()
+{
+	SendResponse(c_EndSends);
+
+	uint32_t timeDelay = 0;
+	uint8_t byte1 = 0;
+	uint8_t byte2 = 0;
+	uint8_t byte3 = 0;
+	uint8_t byte4 = 0;
+
+	while(!Fifo_isEmpty(&timeDelayFifo))
+	{
+		byte1 = Fifo_pop(&timeDelayFifo);
+		byte2 = Fifo_pop(&timeDelayFifo);
+		byte3 = Fifo_pop(&timeDelayFifo);
+		byte4 = Fifo_pop(&timeDelayFifo);
+		timeDelay = (byte4 << 24) | (byte3 << 16) | (byte2 << 8) | byte1;
+
+		byte1 = Fifo_pop(&g_pin0Fifo);
+		SetPin(byte1, TOGGLE_PIN_0_GPIO_Port, TOGGLE_PIN_0_Pin);
+
+		byte1 = Fifo_pop(&g_pin1Fifo);
+		SetPin(byte1, TOGGLE_PIN_1_GPIO_Port, TOGGLE_PIN_1_Pin);
+
+		byte1 = Fifo_pop(&g_pin2Fifo);
+		SetPin(byte1, TOGGLE_PIN_2_GPIO_Port, TOGGLE_PIN_2_Pin);
+
+		byte1 = Fifo_pop(&g_pin3Fifo);
+		SetPin(byte1, TOGGLE_PIN_3_GPIO_Port, TOGGLE_PIN_3_Pin);
+
+		byte1 = Fifo_pop(&g_pin4Fifo);
+		SetPin(byte1, TOGGLE_PIN_4_GPIO_Port, TOGGLE_PIN_4_Pin);
+
+		byte1 = Fifo_pop(&g_pin5Fifo);
+		SetPin(byte1, TOGGLE_PIN_5_GPIO_Port, TOGGLE_PIN_5_Pin);
+
+		byte1 = Fifo_pop(&g_pin6Fifo);
+		SetPin(byte1, TOGGLE_PIN_6_GPIO_Port, TOGGLE_PIN_6_Pin);
+
+		byte1 = Fifo_pop(&g_pin7Fifo);
+		SetPin(byte1, TOGGLE_PIN_7_GPIO_Port, TOGGLE_PIN_7_Pin);
+
+		HAL_Delay(timeDelay);
+	}
+}
+
+void SendResponse(uint8_t _command)
+{
+	uint8_t response[3];
+	response[0] = SyncByte1;
+	response[1] = SyncByte2;
+	response[2] = _command;
+
+	HAL_UART_Transmit(&huart6, response, 3, HAL_MAX_DELAY);
+}
+
+void PinHigh(GPIO_TypeDef* _gpioPort, uint16_t _gpioPin)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = _gpioPin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(_gpioPort, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(_gpioPort, _gpioPin, GPIO_PIN_SET);
+}
+
+void PinLow(GPIO_TypeDef* _gpioPort, uint16_t _gpioPin)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = _gpioPin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(_gpioPort, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(_gpioPort, _gpioPin, GPIO_PIN_RESET);
+}
+
+void PinReset(GPIO_TypeDef* _gpioPort, uint16_t _gpioPin)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = _gpioPin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(_gpioPort, &GPIO_InitStruct);
+}
+
+void SetPin(uint8_t state, GPIO_TypeDef* _gpioPort, uint16_t _gpioPin)
+{
+	switch(state)
+	{
+	case FLOAT:
+		PinReset(_gpioPort, _gpioPin);
+		break;
+	case LOW:
+		PinLow(_gpioPort, _gpioPin);
+		break;
+	case HIGH:
+		PinHigh(_gpioPort, _gpioPin);
+		break;
+	case NO_CHANGE:
+		break;
+	}
+}
+
 
 /* USER CODE END 4 */
 
