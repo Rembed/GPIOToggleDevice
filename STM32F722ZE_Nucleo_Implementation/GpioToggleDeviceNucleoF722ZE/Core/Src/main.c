@@ -170,6 +170,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  uint8_t counter = 0;
   while (1)
   {
     /* USER CODE END WHILE */
@@ -177,6 +179,13 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 	  HAL_Delay(10);
+	  counter++;
+
+	  if(counter == 255)
+	  {
+		  HAL_GPIO_TogglePin(STATUS_LED_GPIO_Port, STATUS_LED_Pin);
+	  }
+
 	  command = CommandParser_getCommand(&g_commandParser);
 
 	  switch(command)

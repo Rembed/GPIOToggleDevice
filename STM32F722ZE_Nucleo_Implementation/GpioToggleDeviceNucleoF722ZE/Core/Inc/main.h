@@ -84,8 +84,8 @@ void Error_Handler(void);
 #define TOGGLE_PIN_6_GPIO_Port GPIOG
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
-#define LD2_Pin GPIO_PIN_7
-#define LD2_GPIO_Port GPIOB
+#define STATUS_LED_Pin GPIO_PIN_7
+#define STATUS_LED_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
