@@ -1,0 +1,2 @@
+commandparser.c:10:6:CommandParser_init	24	static
+commandparser.c:25:9:CommandParser_getCommand	24	static
