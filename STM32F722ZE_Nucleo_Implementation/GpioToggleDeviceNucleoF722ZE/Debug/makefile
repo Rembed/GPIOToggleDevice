@@ -46,8 +46,8 @@ GpioToggleDeviceNucleoF722ZE.bin \
 all: GpioToggleDeviceNucleoF722ZE.elf secondary-outputs
 
 # Tool invocations
-GpioToggleDeviceNucleoF722ZE.elf: $(OBJS) $(USER_OBJS) /home/michael/git_repos/SeniorProject/GPIOToggleDevice/STM32F722ZE_Nucleo_Implementation/GpioToggleDeviceNucleoF722ZE/STM32F722ZETX_FLASH.ld
-	arm-none-eabi-gcc -o "GpioToggleDeviceNucleoF722ZE.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"/home/michael/git_repos/SeniorProject/GPIOToggleDevice/STM32F722ZE_Nucleo_Implementation/GpioToggleDeviceNucleoF722ZE/STM32F722ZETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GpioToggleDeviceNucleoF722ZE.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+GpioToggleDeviceNucleoF722ZE.elf: $(OBJS) $(USER_OBJS) C:\Users\Michael\Git_Repos\SeniorProject\GPIOToggleDevice\STM32F722ZE_Nucleo_Implementation\GpioToggleDeviceNucleoF722ZE\STM32F722ZETX_FLASH.ld
+	arm-none-eabi-gcc -o "GpioToggleDeviceNucleoF722ZE.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\Michael\Git_Repos\SeniorProject\GPIOToggleDevice\STM32F722ZE_Nucleo_Implementation\GpioToggleDeviceNucleoF722ZE\STM32F722ZETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GpioToggleDeviceNucleoF722ZE.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

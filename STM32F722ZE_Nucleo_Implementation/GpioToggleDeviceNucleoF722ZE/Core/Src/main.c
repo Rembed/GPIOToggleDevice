@@ -367,14 +367,15 @@ void EndSends()
 	uint8_t byte3 = 0;
 	uint8_t byte4 = 0;
 
+	//the first time delay will always be zero so there is nothing to pop
+	byte1 = Fifo_pop(&timeDelayFifo);
+	byte2 = Fifo_pop(&timeDelayFifo);
+	byte3 = Fifo_pop(&timeDelayFifo);
+	byte4 = Fifo_pop(&timeDelayFifo);
+	timeDelay = (byte4 << 24) | (byte3 << 16) | (byte2 << 8) | byte1;
+
 	while(!Fifo_isEmpty(&timeDelayFifo))
 	{
-		byte1 = Fifo_pop(&timeDelayFifo);
-		byte2 = Fifo_pop(&timeDelayFifo);
-		byte3 = Fifo_pop(&timeDelayFifo);
-		byte4 = Fifo_pop(&timeDelayFifo);
-		timeDelay = (byte4 << 24) | (byte3 << 16) | (byte2 << 8) | byte1;
-
 		byte1 = Fifo_pop(&g_pin0Fifo);
 		SetPin(byte1, TOGGLE_PIN_0_GPIO_Port, TOGGLE_PIN_0_Pin);
 
@@ -399,7 +400,16 @@ void EndSends()
 		byte1 = Fifo_pop(&g_pin7Fifo);
 		SetPin(byte1, TOGGLE_PIN_7_GPIO_Port, TOGGLE_PIN_7_Pin);
 
-		HAL_Delay(timeDelay);
+		if(!Fifo_isEmpty(&timeDelayFifo))
+		{
+			byte1 = Fifo_pop(&timeDelayFifo);
+			byte2 = Fifo_pop(&timeDelayFifo);
+			byte3 = Fifo_pop(&timeDelayFifo);
+			byte4 = Fifo_pop(&timeDelayFifo);
+			timeDelay = (byte4 << 24) | (byte3 << 16) | (byte2 << 8) | byte1;
+
+			HAL_Delay(timeDelay);
+		}
 	}
 }
 
