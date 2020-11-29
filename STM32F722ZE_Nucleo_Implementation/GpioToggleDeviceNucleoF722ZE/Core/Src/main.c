@@ -374,7 +374,7 @@ void EndSends()
 	byte4 = Fifo_pop(&timeDelayFifo);
 	timeDelay = (byte4 << 24) | (byte3 << 16) | (byte2 << 8) | byte1;
 
-	while(!Fifo_isEmpty(&timeDelayFifo))
+	do
 	{
 		byte1 = Fifo_pop(&g_pin0Fifo);
 		SetPin(byte1, TOGGLE_PIN_0_GPIO_Port, TOGGLE_PIN_0_Pin);
@@ -410,7 +410,7 @@ void EndSends()
 
 			HAL_Delay(timeDelay);
 		}
-	}
+	}while(!Fifo_isEmpty(&g_pin0Fifo));
 }
 
 void SendResponse(uint8_t _command)
